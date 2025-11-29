@@ -90,7 +90,7 @@ HTML_TEMPLATE = '''
 
     <h3>Recent Rolls</h3>
     <div class="log-container" id="log">
-        {% for entry in roll_log reversed %}
+        {% for entry in roll_log|reverse %}
             <div>{{ entry }}</div>
         {% endfor %}
     </div>
