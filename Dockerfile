@@ -1,11 +1,11 @@
-FROM python:3.11-slim
+FROM registry.cn-hangzhou.aliyuncs.com/library/python:3.11-slim
 
 WORKDIR /app
 
-RUN pip install flask
+RUN pip install flask -i https://mirrors.aliyun.com/pypi/simple/
 
-COPY dice_roll.py .          # ← Copy the renamed file
+COPY dice_roll.py .
 
 EXPOSE 5000
 
-CMD ["python", "dice_roll.py"]  # ← Run the correct filename
+CMD ["python", "dice_roll.py"]
