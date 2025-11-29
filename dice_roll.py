@@ -4,7 +4,7 @@ import random
 import datetime
 from collections import deque
 import threading
-import time  # 🔥 Added for CPU burn
+import time
 
 app = Flask(__name__)
 
@@ -31,8 +31,33 @@ HTML_TEMPLATE = '''
         .dice-display { 
             font-size: 80px; text-align: center; margin: 20px 0; 
             transition: transform 0.3s ease; 
+            cursor: default;
         }
-        .roll-active { transform: rotate(360deg); }
+        
+        /* 🔥 Dice Rolling Animation */
+        @keyframes rollDice {
+            0%   { transform: rotateY(0deg)   rotateX(0deg); }
+            12%  { transform: rotateY(90deg)  rotateX(0deg); }
+            25%  { transform: rotateY(180deg) rotateX(0deg); }
+            37%  { transform: rotateY(270deg) rotateX(0deg); }
+            50%  { transform: rotateY(360deg) rotateX(0deg); }
+            62%  { transform: rotateY(360deg) rotateX(90deg); }
+            75%  { transform: rotateY(360deg) rotateX(180deg); }
+            87%  { transform: rotateY(360deg) rotateX(270deg); }
+            100% { transform: rotateY(360deg) rotateX(360deg); }
+        }
+        
+        .rolling {
+            animation: rollDice 1s ease-in-out;
+            opacity: 0.7;
+        }
+        
+        .dice-face {
+            display: inline-block;
+            width: 1.2em;
+            text-align: center;
+        }
+
         .btn { 
             background: #0070cc; color: white; border: none; padding: 12px 24px; 
             border-radius: 6px; cursor: pointer; font-size: 16px; margin: 5px;
@@ -81,9 +106,9 @@ HTML_TEMPLATE = '''
         
         <div class="rps-control">
             <label for="rps">Rolls/sec:</label>
-            <input type="range" id="rps" min="1" max="30" value="15" 
+            <input type="range" id="rps" min="1" max="30" value="10" 
                    oninput="updateRpsLabel()" style="width: 150px;">
-            <span id="rps-value">15</span>
+            <span id="rps-value">10</span>
         </div>
     </div>
 
@@ -104,7 +129,7 @@ HTML_TEMPLATE = '''
 
     <script>
         let autoRolling = false;
-        let rps = 15;
+        let rps = 10;
 
         function updateUI() {
             const btn = document.getElementById('actionBtn');
@@ -140,7 +165,21 @@ HTML_TEMPLATE = '''
                 .catch(console.error);
         }
 
+        function updateDice(value, isRolling = false) {
+            const dice = document.getElementById('dice');
+            
+            if (isRolling) {
+                dice.textContent = '🎲';
+                dice.className = 'rolling';
+            } else {
+                const faces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+                dice.innerHTML = `<span class="dice-face">${faces[value - 1]}</span>`;
+                dice.className = '';
+            }
+        }
+
         function rollOnce() {
+            updateDice(null, true);
             fetch('/roll')
                 .then(res => res.json())
                 .then(data => {
@@ -148,13 +187,6 @@ HTML_TEMPLATE = '''
                     updateLog();
                 })
                 .catch(console.error);
-        }
-
-        function updateDice(value) {
-            const dice = document.getElementById('dice');
-            dice.textContent = value;
-            dice.classList.add('roll-active');
-            setTimeout(() => dice.classList.remove('roll-active'), 300);
         }
 
         function updateLog() {
@@ -173,7 +205,10 @@ HTML_TEMPLATE = '''
                     if (data.log.length > 0) {
                         const lastEntry = data.log[data.log.length - 1];
                         const result = lastEntry.split('rolled: ')[1] || '?';
-                        document.getElementById('dice').textContent = result;
+                        // Don't update dice if auto-rolling (to avoid race)
+                        if (!autoRolling) {
+                            updateDice(parseInt(result));
+                        }
                     }
                 })
                 .catch(console.error);
@@ -181,10 +216,22 @@ HTML_TEMPLATE = '''
 
         function sendAutoRoll() {
             if (!autoRolling) return;
+            
+            updateDice(null, true);
             fetch('/roll')
-                .then(() => updateLog())
-                .catch(console.error);
-            setTimeout(sendAutoRoll, 1000 / rps);
+                .then(res => res.json())
+                .then(data => {
+                    if (autoRolling) {
+                        updateDice(data.result);
+                        updateLog();
+                    }
+                })
+                .catch(console.error)
+                .finally(() => {
+                    if (autoRolling) {
+                        setTimeout(sendAutoRoll, 1000 / rps);
+                    }
+                });
         }
 
         function toggleRolling() {
@@ -240,10 +287,8 @@ def roll_dice():
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         roll_log.append(f"[{timestamp}] Pod {os.getenv('HOSTNAME')} rolled: {result}")
     
-    # 🔥 BURN CPU for 20 milliseconds → ~60% of 0.5-core at 15 RPS
-    start = time.perf_counter()
-    while (time.perf_counter() - start) < 0.020:
-        pass  # Spin at 100% CPU
+    # 🔥 Simulate 1-second real-world work (e.g., API call, DB query)
+    time.sleep(1)
     
     return jsonify({"result": result})
 
@@ -266,4 +311,5 @@ def get_metrics():
 
 
 if __name__ == '__main__':
+    # For local dev only (use Gunicorn in production)
     app.run(host='0.0.0.0', port=5000, threaded=True)
