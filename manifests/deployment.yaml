@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dice-roller
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: dice-roller
+  template:
+    metadata:
+      labels:
+        app: dice-roller
+    spec:
+      containers:
+      - name: dice-roller
+        image: <replace_with_ACR_endpoint>
+        ports:
+        - containerPort: 5000
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
+      restartPolicy: Always
