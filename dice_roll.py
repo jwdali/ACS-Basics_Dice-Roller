@@ -4,6 +4,7 @@ import random
 import datetime
 from collections import deque
 import threading
+import time  # 🔥 Added for CPU burn
 
 app = Flask(__name__)
 
@@ -12,20 +13,6 @@ counter = 0
 roll_log = deque(maxlen=20)
 start_time = datetime.datetime.now()
 state_lock = threading.Lock()
-
-
-# 🔥 CPU-Intensive Workload: Prime Number Calculation
-def find_primes_up_to(n):
-    """Generate primes up to n — tuned for ~60% CPU on 0.5-core pods at 15-20 RPS"""
-    if n < 2:
-        return []
-    sieve = [True] * (n + 1)
-    sieve[0] = sieve[1] = False
-    for i in range(2, int(n ** 0.5) + 1):
-        if sieve[i]:
-            for j in range(i * i, n + 1, i):
-                sieve[j] = False
-    return [i for i, prime in enumerate(sieve) if prime]
 
 
 HTML_TEMPLATE = '''
@@ -253,8 +240,10 @@ def roll_dice():
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         roll_log.append(f"[{timestamp}] Pod {os.getenv('HOSTNAME')} rolled: {result}")
     
-    # 🔥 TUNED FOR 0.5 CPU PODS: Generates ~60% CPU at 15-20 RPS
-    _ = find_primes_up_to(7000)  # Adjust if needed: 6000=light, 8000=heavy
+    # 🔥 BURN CPU for 20 milliseconds → ~60% of 0.5-core at 15 RPS
+    start = time.perf_counter()
+    while (time.perf_counter() - start) < 0.020:
+        pass  # Spin at 100% CPU
     
     return jsonify({"result": result})
 
