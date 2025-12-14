@@ -20,6 +20,7 @@ def burn_cpu(seconds):
     end_time = time.time() + seconds
     while time.time() < end_time:
         # Perform a lightweight but CPU-consuming operation
+        # Used to simulate load on container
         _ = 3.141592653589793 ** 2  # Fast, no I/O, keeps CPU busy
 
 
