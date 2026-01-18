@@ -97,7 +97,7 @@ HTML_TEMPLATE = '''
 </head>
 <body>
     <div class="header">
-        <h1>🎲 Alibaba Cloud ACS Dice Roller</h1>
+        <h1>🎲 Alibaba Cloud ACS Dice Roller: Jawad Shah</h1>
         <div class="dice-display" id="dice">?</div>
     </div>
 
